@@ -3,7 +3,7 @@ from datetime import datetime
 from . import db
 
 
-class BaseModel(db.Model):
+class BaseModel(object):
     """模型基类， 为每个模型补充创建时间与更新时间"""
     create_time = db.Column(db.DateTime, default=datetime.now)
     update_time = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
@@ -13,7 +13,7 @@ class User(BaseModel, db.Model):
     """用户"""
     __tablename__ = "ih_user_profile"
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(32), unique=True, unllable=False)
+    name = db.Column(db.String(32), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
     mobile = db.Column(db.String(11), unique=False)
     real_name = db.Column(db.String(32))
@@ -40,6 +40,7 @@ house_facility = db.Table(
 
 class House(BaseModel, db.Model):
     """房子信息"""
+    __tablename__ = "ih_house_info"
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("ih_user_profile.id"))
     area_id = db.Column(db.Integer, db.ForeignKey("ih_area_info.id"))
@@ -59,3 +60,42 @@ class House(BaseModel, db.Model):
     facilities = db.relationship('facility', secondary=house_facility)  # 房屋的设施
     images = db.relationship("HouseImage")  # 房屋的图
     orders = db.relationship('Order', backref="house")  # 房屋的订单
+
+
+class Facility(BaseModel, db.Model):
+    """设施信息"""
+    __tablename__ = "ih_facility_info"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(32))
+
+
+class HouseImage(BaseModel, db.Model):
+    __tablename__ = "ih_house_image"
+    id = db.Column(db.Integer, primary_key=True)
+    house_id = db.Column(db.Integer, db.ForeignKey("ih_house_info.id"), nullable=False)
+    url = db.Column(db.String(256))
+
+
+class Order(BaseModel, db.Model):
+    __tablename__ = "ih_order_info"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("ih_user_profile.id"))
+    house_id = db.Column(db.Integer, db.ForeignKey("ih_house_info.id"))
+    begin_date = db.Column(db.DateTime, nullable=False)
+    end_date = db.Column(db.DateTime,nullable=False)
+    days = db.Column(db.Integer, nullable=False)
+    house_price = db.Column(db.DateTime, nullable=False)
+    amount = db.Column(db.Integer, nullable=False)
+    status = db.Column(
+        db.Enum(
+            "WAIT_ACCEPT",
+            "WAIT_PAYMENT",
+            "PAID",
+            "WAIT_COMMENT",
+            "COMPLETE",
+            "CANCELED",
+            "REJECTED"
+        ),
+        default="WAIT_ACCEPT", index=True
+    )
+    comment = db.Column(db.Text)
